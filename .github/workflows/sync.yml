@@ -5,21 +5,50 @@ on:
     - cron: '0 6 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  sync:
+  sync_mirror:
     runs-on: ubuntu-latest
-    name: Sync sync branch with upstream master
+    name: Mirror sync ← upstream/master (fast-forward)
     steps:
-      - name: Checkout target
+      - name: Checkout sync
         uses: actions/checkout@v4
         with:
           ref: sync
 
       - name: Sync upstream changes
-        id: sync
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.1
         with:
           target_sync_branch: sync
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
           upstream_sync_repo: emacs-evil/evil-collection
           upstream_sync_branch: master
+
+  rebase_sync_dev:
+    runs-on: ubuntu-latest
+    needs: sync_mirror
+    name: Rebase sync_dev onto upstream/master
+    steps:
+      - name: Checkout sync_dev
+        uses: actions/checkout@v4
+        with:
+          ref: sync_dev
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/emacs-evil/evil-collection.git
+          git fetch upstream master
+
+      - name: Rebase onto upstream/master
+        run: git rebase upstream/master
+
+      - name: Force-push sync_dev
+        run: git push --force-with-lease origin sync_dev
