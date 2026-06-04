@@ -26,10 +26,10 @@ jobs:
           upstream_sync_repo: emacs-evil/evil-collection
           upstream_sync_branch: master
 
-  rebase_sync_dev:
+  rebuild_sync_dev:
     runs-on: ubuntu-latest
     needs: sync_mirror
-    name: Rebase sync_dev onto upstream/master
+    name: Rebuild sync_dev from upstream/master + dev patches
     steps:
       - name: Checkout sync_dev
         uses: actions/checkout@v4
@@ -42,13 +42,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Fetch upstream
+      - name: Fetch dev and upstream
         run: |
+          git fetch origin dev:dev
           git remote add upstream https://github.com/emacs-evil/evil-collection.git
           git fetch upstream master
 
-      - name: Rebase onto upstream/master
-        run: git rebase upstream/master
+      - name: Reset sync_dev to upstream/master
+        run: git reset --hard upstream/master
+
+      - name: Cherry-pick dev patches onto upstream/master
+        run: git cherry-pick upstream/master..dev
 
       - name: Force-push sync_dev
         run: git push --force-with-lease origin sync_dev
