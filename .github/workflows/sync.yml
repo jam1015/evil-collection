@@ -52,7 +52,7 @@ jobs:
         run: git reset --hard upstream/master
 
       - name: Cherry-pick dev patches onto upstream/master
-        run: git cherry-pick upstream/master..dev
+        run: git cherry-pick --empty=drop upstream/master..dev
 
       - name: Force-push sync_dev
         run: git push --force-with-lease origin sync_dev
